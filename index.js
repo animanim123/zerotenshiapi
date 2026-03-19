@@ -1,5 +1,4 @@
 import express from "express";
-import serverless from "serverless-http";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
@@ -346,8 +345,8 @@ app.get("/content/:katcontent/*", async (req, res) => {
     }
 });
 
-// ✅ export untuk Vercel
-export default serverless(app);
+
+export default app;
 
 if (process.env.NODE_ENV !== "production") {
     const port = 3000;
