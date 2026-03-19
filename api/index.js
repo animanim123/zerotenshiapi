@@ -4,29 +4,8 @@ import * as cheerio from "cheerio";
 
 const app = express();
 
-const API_KEY = process.env.API_KEY;
 
-function checkApiKey(req, res, next) {
-    const apiKey = req.headers["x-api-key"];
-
-    if (!apiKey) {
-        return res.status(401).json({
-            status: "error",
-            message: "API key diperlukan",
-        });
-    }
-
-    if (apiKey !== API_KEY) {
-        return res.status(403).json({
-            status: "error",
-            message: "API key tidak valid",
-        });
-    }
-
-    next();
-}
-
-app.get("/home", checkApiKey, async (req, res) => {
+app.get("/home", async (req, res) => {
     try {
         const response = await axios.get("https://mynimeku.com", {
             headers: {
@@ -144,7 +123,7 @@ app.get("/home", checkApiKey, async (req, res) => {
     }
 });
 
-app.get(/^\/\/info\/(.+)/, checkApiKey, async (req, res) => {
+app.get(/^\/\/info\/(.+)/, async (req, res) => {
     const katslug = req.params[0];
     const url = `https://www.mynimeku.com/${katslug}/`;
     try {
@@ -273,7 +252,7 @@ app.get(/^\/\/info\/(.+)/, checkApiKey, async (req, res) => {
     }
 });
 
-app.get(/^\/\/content\/(.+)/, checkApiKey, async (req, res) => {
+app.get(/^\/\/content\/(.+)/, async (req, res) => {
     const katcontent = req.params[0];
     const url = `https://www.mynimeku.com/${katcontent}/`;
 
@@ -364,6 +343,5 @@ app.get(/^\/\/content\/(.+)/, checkApiKey, async (req, res) => {
         });
     }
 });
-
 
 export default app;
