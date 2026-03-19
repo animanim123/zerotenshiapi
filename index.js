@@ -1,8 +1,10 @@
 import express from "express";
+import serverless from "serverless-http";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
 const app = express();
+
 
 
 app.get("/home", async (req, res) => {
@@ -123,7 +125,7 @@ app.get("/home", async (req, res) => {
     }
 });
 
-app.get(/^\/\/info\/(.+)/, async (req, res) => {
+app.get("/info/:katslug/*", async (req, res) => {
     const katslug = req.params[0];
     const url = `https://www.mynimeku.com/${katslug}/`;
     try {
@@ -252,7 +254,7 @@ app.get(/^\/\/info\/(.+)/, async (req, res) => {
     }
 });
 
-app.get(/^\/\/content\/(.+)/, async (req, res) => {
+app.get("/content/:katcontent/*", async (req, res) => {
     const katcontent = req.params[0];
     const url = `https://www.mynimeku.com/${katcontent}/`;
 
@@ -344,4 +346,12 @@ app.get(/^\/\/content\/(.+)/, async (req, res) => {
     }
 });
 
-export default app;
+// ✅ export untuk Vercel
+export default serverless(app);
+
+if (process.env.NODE_ENV !== "production") {
+    const port = 3000;
+    app.listen(port, () => {
+        console.log("Local jalan di http://localhost:3000");
+    });
+}
