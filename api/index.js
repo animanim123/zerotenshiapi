@@ -1,5 +1,4 @@
 import express from "express";
-import serverless from "serverless-http";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
@@ -27,7 +26,7 @@ function checkApiKey(req, res, next) {
     next();
 }
 
-app.get("/api/home", checkApiKey, async (req, res) => {
+app.get("/home", checkApiKey, async (req, res) => {
     try {
         const response = await axios.get("https://mynimeku.com", {
             headers: {
@@ -145,7 +144,7 @@ app.get("/api/home", checkApiKey, async (req, res) => {
     }
 });
 
-app.get(/^\/api\/info\/(.+)/, checkApiKey, async (req, res) => {
+app.get(/^\/\/info\/(.+)/, checkApiKey, async (req, res) => {
     const katslug = req.params[0];
     const url = `https://www.mynimeku.com/${katslug}/`;
     try {
@@ -274,7 +273,7 @@ app.get(/^\/api\/info\/(.+)/, checkApiKey, async (req, res) => {
     }
 });
 
-app.get(/^\/api\/content\/(.+)/, checkApiKey, async (req, res) => {
+app.get(/^\/\/content\/(.+)/, checkApiKey, async (req, res) => {
     const katcontent = req.params[0];
     const url = `https://www.mynimeku.com/${katcontent}/`;
 
@@ -367,12 +366,4 @@ app.get(/^\/api\/content\/(.+)/, checkApiKey, async (req, res) => {
 });
 
 
-export default serverless(app);
-
-// ✅ jalan di local
-if (process.env.NODE_ENV !== "production") {
-    const port = 3000;
-    app.listen(port, () => {
-        console.log("Local jalan di http://localhost:3000");
-    });
-}
+export default app;
