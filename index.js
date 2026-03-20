@@ -4,6 +4,13 @@ import * as cheerio from "cheerio";
 
 const app = express();
 
+app.get("/", (req, res) => {
+    res.json({
+        status: "API hidup 🚀",
+        endpoint: ["/home", "/info", "/content"]
+    });
+});
+
 app.get("/home", async (req, res) => {
     try {
         const response = await axios.get("https://mynimeku.com", {
