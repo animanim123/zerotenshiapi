@@ -343,12 +343,8 @@ app.get("/content/:katcontent/*", async (req, res) => {
     }
 });
 
+const PORT = process.env.PORT || 3000;
 
-export default app;
-
-if (process.env.NODE_ENV !== "production") {
-    const port = 3000;
-    app.listen(port, () => {
-        console.log("Local jalan di http://localhost:3000");
-    });
-}
+app.listen(PORT, () => {
+    console.log("Server jalan di port " + PORT);
+});
