@@ -1,11 +1,8 @@
 import express from "express";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import serverless from "serverless-http";
 
 const app = express();
-
-
 
 app.get("/home", async (req, res) => {
     try {
@@ -347,7 +344,7 @@ app.get("/content/:katcontent/*", async (req, res) => {
 });
 
 
-export default serverless(app);
+export default app;
 
 if (process.env.NODE_ENV !== "production") {
     const port = 3000;
