@@ -30,15 +30,6 @@ app.get("/home", async (req, res) => {
         const animeOngoing = [];
         const mangaOngoing = [];
 
-        const widget1 = $("div.widget-title h1")
-            .eq(0)
-            .contents()
-            .filter(function () {
-                return this.type === "text";
-            })
-            .text()
-            .trim();
-
         $("article.anime div.animposx").each((i, element) => {
             const poster = $(element)
                 .find("img")
@@ -72,15 +63,6 @@ app.get("/home", async (req, res) => {
                 eps,
             });
         });
-
-        const widget2 = $("div.widget-title h1")
-            .eq(1)
-            .contents()
-            .filter(function () {
-                return this.type === "text";
-            })
-            .text()
-            .trim();
 
         $("article.manga div.animposx").each((i, element) => {
             const poster = $(element)
@@ -122,8 +104,8 @@ app.get("/home", async (req, res) => {
             statusCode: 200,
             statusMessage: "Aman cuy",
             data: {
-                [widget1]: animeOngoing,
-                [widget2]: mangaOngoing,
+                ["series"]: animeOngoing,
+                ["komik"]: mangaOngoing,
             },
         });
     } catch (err) {
