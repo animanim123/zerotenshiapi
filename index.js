@@ -353,6 +353,30 @@ app.get("/content/:katcontent/*", async (req, res) => {
     }
 });
 
+app.get("/image", async (req, res) => {
+    try {
+        const url = req.query.url;
+
+        if (!url) {
+            return res.status(400).send("URL tidak ada");
+        }
+
+        const response = await axios.get(url, {
+            responseType: "arraybuffer",
+            headers: {
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://www.mynimeku.com/"
+            }
+        });
+
+        res.set("Content-Type", response.headers["content-type"]);
+        res.send(response.data);
+
+    } catch (err) {
+        res.status(500).send("Gagal ambil gambar");
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
