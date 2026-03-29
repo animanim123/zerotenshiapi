@@ -318,8 +318,8 @@ app.get("/content/:katcontent/*", async (req, res) => {
             statusMessage: "Aman cuy",
             data: {
                 titleepsode,
-                [public]: servers1,
-                [private]: servers2,
+                ["public"]: servers1,
+                ["private"]: servers2,
                 komiks: komik
             },
         });
