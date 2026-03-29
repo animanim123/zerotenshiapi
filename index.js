@@ -37,10 +37,10 @@ app.get("/home", async (req, res) => {
         const mangaOngoing = [];
 
         $("article.anime div.animposx").each((i, element) => {
-            const poster = $(element)
-                .find("img")
-                .attr("data-lazy-src")
-                ?.replace(/^\/\//, "https://");
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
             const tipe = $(element).find("div.type").text().trim();
             const status = $(element).find("div.status").text().trim();
             const title = $(element).find("div.title").text().trim();
@@ -140,11 +140,10 @@ app.get("/info/:katslug/*", async (req, res) => {
 
         const $ = cheerio.load(response.data);
 
-        const poster = $("div.infoanime")
-            .children("div.thumb")
-            .children("img")
-            .attr("data-lazy-src")
-            ?.replace(/^\/\//, "https://");
+        const img = $(element).find("img");
+        const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
+        
         const title = $("div.infox").children("h1.entry-title").text().trim();
         const rating = $("div.rating-area .rtg i").first().text().trim();
         const description = $("div.desc .entry-content p").first().text().trim();
