@@ -280,7 +280,6 @@ app.get("/content/:katcontent/*", async (req, res) => {
         const servers1 = [];
         const servers2 = [];
 
-        const heading1 = $(".server-group h4").eq(0).text().trim();
 
         $(".server-buttons .server-btn").slice(0, 6).each((i, el) => {
             const server = $(el).attr("data-player-url");
@@ -291,8 +290,6 @@ app.get("/content/:katcontent/*", async (req, res) => {
                 servertitle,
             });
         });
-
-        const heading2 = $(".server-group h4").eq(1).text().trim();
 
         $(".server-buttons .server-btn").slice(7, 12).each((i, el) => {
             const server = $(el).attr("data-player-url");
@@ -321,8 +318,8 @@ app.get("/content/:katcontent/*", async (req, res) => {
             statusMessage: "Aman cuy",
             data: {
                 titleepsode,
-                [heading1]: servers1,
-                [heading2]: servers2,
+                [public]: servers1,
+                [private]: servers2,
                 komiks: komik
             },
         });
