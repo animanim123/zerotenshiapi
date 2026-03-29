@@ -6,8 +6,8 @@ import cors from "cors";
 const app = express();
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  next();
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    next();
 });
 
 app.get("/", (req, res) => {
@@ -314,24 +314,6 @@ app.get("/content/:katcontent/*", async (req, res) => {
             })
         })
 
-        const nav = []
-
-        const next = $(".nevxs .rght a").attr("href");
-        const katnext = new URL(next).pathname.substring(1);
-        const nextId = next.split("/").filter(Boolean).pop();
-        const prev = $(".nevxs .nvs a").attr("href");
-        const katprev = new URL(prev).pathname.substring(1);
-        const prevId = prev.split("/").filter(Boolean).pop();
-
-        nav.push({
-            next,
-            katnext,
-            nextId,
-            prev,
-            katprev,
-            prevId
-        })
-
         res.json({
             status: "success",
             pembuat: "GAZZ AHAY",
@@ -341,8 +323,7 @@ app.get("/content/:katcontent/*", async (req, res) => {
                 titleepsode,
                 [heading1]: servers1,
                 [heading2]: servers2,
-                komiks: komik,
-                nav
+                komiks: komik
             },
         });
     } catch (err) {
@@ -364,8 +345,13 @@ app.get("/image", async (req, res) => {
         const response = await axios.get(url, {
             responseType: "arraybuffer",
             headers: {
-                "User-Agent": "Mozilla/5.0",
-                "Referer": "https://www.mynimeku.com/"
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.mynimeku.com/",
+                "Origin": "https://www.mynimeku.com",
+                "Connection": "keep-alive"
             }
         });
 
@@ -381,4 +367,4 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log("Server jalan di port " + PORT);
-});
+});     
