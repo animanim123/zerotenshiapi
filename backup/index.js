@@ -121,10 +121,9 @@ app.get("/home", async (req, res) => {
     }
 });
 
-app.get("/info/:type/*", async (req, res) => {
-    const type = req.params.type;
-    const slug = req.params[0];
-    const url = `https://www.mynimeku.com/${type}/${slug}/`;
+app.get("/info/:katslug/*", async (req, res) => {
+    const katslug = req.params[0];
+    const url = `https://www.mynimeku.com/${katslug}/`;
     try {
         const response = await axios.get(url, {
             headers: {
