@@ -121,9 +121,10 @@ app.get("/home", async (req, res) => {
     }
 });
 
-app.get("/info/:katslug/*", async (req, res) => {
-    const katslug = req.params[0];
-    const url = `https://www.mynimeku.com/${katslug}/`;
+app.get("/info/:type/*", async (req, res) => {
+    const type = req.params.type;
+    const slug = req.params[0];
+    const url = `https://www.mynimeku.com/${type}/${slug}/`;
     try {
         const response = await axios.get(url, {
             headers: {
@@ -359,8 +360,606 @@ app.get("/image", async (req, res) => {
     }
 });
 
+app.get("/latestseries/page/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/latest-series/page/${page}/`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const latestseries = [];
+        const nav = [];
+
+        $("article.anime div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const eps = $(element)
+                .find("div.plyepisode")
+                .contents()
+                .filter(function () {
+                    return this.type === "text";
+                })
+                .text()
+                .trim()
+                .split("\n")[0]
+                .trim();
+
+            latestseries.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                eps,
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                latestseries,
+                nav,
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/latestkomik/page/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/latest-komik/page/${page}/`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const latestkomik = [];
+        const nav = [];
+
+        $("article.manga div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const ch = $(element)
+                .find("div.plyepisode")
+                .contents()
+                .filter(function () {
+                    return this.type === "text";
+                })
+                .text()
+                .trim()
+                .split("\n")[0]
+                .trim();
+
+            latestkomik.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                ch,
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                latestkomik,
+                nav,
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/search/*", async (req, res) => {
+    const keyword = req.params[0];
+    const url = `https://www.mynimeku.com/?s=${keyword}`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const search = [];
+
+        $("article div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            search.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                search,
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/popular/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=popular&status&type=TV&genre%5B0%5D=action&genre%5B1%5D=adult&genre%5B2%5D=adult-cast&genre%5B3%5D=adventure&genre%5B4%5D=anthropomorphic&genre%5B5%5D=award-winning&genre%5B6%5D=cars&genre%5B7%5D=cgdct&genre%5B8%5D=childcare&genre%5B9%5D=comedy&genre%5B10%5D=crossdressing&genre%5B11%5D=drama&genre%5B12%5D=ecchi&genre%5B13%5D=erotica&genre%5B14%5D=fantasy&genre%5B15%5D=gag-humor&genre%5B16%5D=game&genre%5B17%5D=girls-love&genre%5B18%5D=gore&genre%5B19%5D=gourmet&genre%5B20%5D=harem&genre%5B21%5D=high-stakes-game&genre%5B22%5D=historical&genre%5B23%5D=horror&genre%5B24%5D=idols&genre%5B25%5D=isekai&genre%5B26%5D=josei&genre%5B27%5D=love-polygon&genre%5B28%5D=love-status-quo&genre%5B29%5D=mahou-shoujo&genre%5B30%5D=martial-arts&genre%5B31%5D=mature&genre%5B32%5D=military&genre%5B33%5D=music&genre%5B34%5D=mystery&genre%5B35%5D=mythology&genre%5B36%5D=organized-crime&genre%5B37%5D=otaku-culture&genre%5B38%5D=parody&genre%5B39%5D=performing-arts&genre%5B40%5D=reincarnation&genre%5B41%5D=romance&genre%5B42%5D=samurai&genre%5B43%5D=school&genre%5B44%5D=sci-fi&genre%5B45%5D=seinen&genre%5B46%5D=shounen&genre%5B47%5D=showbiz&genre%5B48%5D=slice-of-life&genre%5B49%5D=space&genre%5B50%5D=sports&genre%5B51%5D=super-power&genre%5B52%5D=supernatural&genre%5B53%5D=survival&genre%5B54%5D=suspense&genre%5B55%5D=time-travel&genre%5B56%5D=urban-fantasy&genre%5B57%5D=vampire&genre%5B58%5D=video-game&genre%5B59%5D=villainess&genre%5B60%5D=workplace`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const popular = [];
+        const nav = [];
+
+        $("article div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            popular.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                popular,
+                nav
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/list/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status&type=TV&genre%5B0%5D=action&genre%5B1%5D=adventure&genre%5B2%5D=anthropomorphic&genre%5B3%5D=award-winning&genre%5B4%5D=cars&genre%5B5%5D=cgdct&genre%5B6%5D=childcare&genre%5B7%5D=comedy&genre%5B8%5D=crossdressing&genre%5B9%5D=drama&genre%5B10%5D=fantasy&genre%5B11%5D=gag-humor&genre%5B12%5D=game&genre%5B13%5D=gore&genre%5B14%5D=gourmet&genre%5B15%5D=high-stakes-game&genre%5B16%5D=historical&genre%5B17%5D=horror&genre%5B18%5D=idols&genre%5B19%5D=isekai&genre%5B20%5D=josei&genre%5B21%5D=love-polygon&genre%5B22%5D=love-status-quo&genre%5B23%5D=mahou-shoujo&genre%5B24%5D=martial-arts&genre%5B25%5D=mature&genre%5B26%5D=military&genre%5B27%5D=music&genre%5B28%5D=mystery&genre%5B29%5D=mythology&genre%5B30%5D=organized-crime&genre%5B31%5D=otaku-culture&genre%5B32%5D=parody&genre%5B33%5D=performing-arts&genre%5B34%5D=reincarnation&genre%5B35%5D=romance&genre%5B36%5D=samurai&genre%5B37%5D=school&genre%5B38%5D=sci-fi&genre%5B39%5D=seinen&genre%5B40%5D=shounen&genre%5B41%5D=showbiz&genre%5B42%5D=slice-of-life&genre%5B43%5D=space&genre%5B44%5D=sports&genre%5B45%5D=super-power&genre%5B46%5D=supernatural&genre%5B47%5D=survival&genre%5B48%5D=suspense&genre%5B49%5D=time-travel&genre%5B50%5D=urban-fantasy&genre%5B51%5D=vampire&genre%5B52%5D=video-game&genre%5B53%5D=villainess&genre%5B54%5D=workplace`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const list = [];
+        const nav = [];
+
+        $("article div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            list.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                list,
+                nav
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/ongoing/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status=On-Going&type=TV&genre%5B0%5D=action&genre%5B1%5D=adventure&genre%5B2%5D=anthropomorphic&genre%5B3%5D=award-winning&genre%5B4%5D=cars&genre%5B5%5D=cgdct&genre%5B6%5D=childcare&genre%5B7%5D=comedy&genre%5B8%5D=crossdressing&genre%5B9%5D=drama&genre%5B10%5D=ecchi&genre%5B11%5D=fantasy&genre%5B12%5D=gag-humor&genre%5B13%5D=game&genre%5B14%5D=gore&genre%5B15%5D=gourmet&genre%5B16%5D=harem&genre%5B17%5D=high-stakes-game&genre%5B18%5D=historical&genre%5B19%5D=horror&genre%5B20%5D=idols&genre%5B21%5D=isekai&genre%5B22%5D=josei&genre%5B23%5D=love-polygon&genre%5B24%5D=love-status-quo&genre%5B25%5D=mahou-shoujo&genre%5B26%5D=martial-arts&genre%5B27%5D=mature&genre%5B28%5D=military&genre%5B29%5D=music&genre%5B30%5D=mystery&genre%5B31%5D=mythology&genre%5B32%5D=organized-crime&genre%5B33%5D=otaku-culture&genre%5B34%5D=parody&genre%5B35%5D=performing-arts&genre%5B36%5D=reincarnation&genre%5B37%5D=romance&genre%5B38%5D=samurai&genre%5B39%5D=school&genre%5B40%5D=sci-fi&genre%5B41%5D=seinen&genre%5B42%5D=shounen&genre%5B43%5D=showbiz&genre%5B44%5D=slice-of-life&genre%5B45%5D=space&genre%5B46%5D=sports&genre%5B47%5D=super-power&genre%5B48%5D=supernatural&genre%5B49%5D=survival&genre%5B50%5D=suspense&genre%5B51%5D=time-travel&genre%5B52%5D=urban-fantasy&genre%5B53%5D=vampire&genre%5B54%5D=video-game&genre%5B55%5D=villainess&genre%5B56%5D=workplace`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const ongoing = [];
+        const nav = [];
+
+        $("article div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            ongoing.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                ongoing,
+                nav
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/movie/*", async (req, res) => {
+    const page = req.params[0];
+    const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status&type=Movie`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const movie = [];
+        const nav = [];
+
+        $("article div.animposx").each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            movie.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        $(".pagination")
+            .find("span, a, span.page-numbers")
+            .each((i, el) => {
+                const page = $(el).text().trim();
+
+                nav.push({
+                    page,
+                    active: $(el).hasClass("current"),
+                });
+            });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                movie,
+                nav
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
+app.get("/banner", async (req, res) => {
+    const url = `https://www.mynimeku.com/full-list/?title=&order=update&status=On-Going&type=TV`;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const banner = [];
+
+        $("article div.animposx").slice(0, 4).each((i, element) => {
+            const img = $(element).find("img");
+            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+            const poster = getposter?.replace(/^\/\//, "https://");
+
+            const tipe = $(element).find("div.type").text().trim();
+            const status = $(element).find("div.status").text().trim();
+            const title = $(element).find("div.title").text().trim();
+            const href = $(element).find("a").attr("href");
+            const slug = href.split("/").filter(Boolean).pop();
+            const katslug = new URL(href).pathname.substring(1);
+            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+
+            banner.push({
+                title,
+                poster,
+                tipe,
+                status,
+                slug,
+                katslug,
+                href,
+                rating
+            });
+        });
+
+        res.json({
+            status: "success",
+            pembuat: "GAZZ AHAY",
+            statusCode: 200,
+            statusMessage: "Aman cuy",
+            data: {
+                banner
+            },
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: err.message,
+        });
+    }
+})
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log("Server jalan di port " + PORT);
-});     
+});
