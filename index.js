@@ -38,7 +38,7 @@ app.get("/home", async (req, res) => {
     const animeOngoing = [];
     const mangaOngoing = [];
 
-    $(".mynimeku-update-widget__list .mynimeku-update-widget__item").each(
+    $(".mynimeku-update-widget--series .mynimeku-update-widget__list .mynimeku-update-widget__item").each(
       (i, element) => {
         const img = $(element).find("img");
         const getposter =
@@ -85,7 +85,7 @@ app.get("/home", async (req, res) => {
       },
     );
 
-    $(".mynimeku-update-widget__list .mynimeku-update-widget__item").each(
+    $(".mynimeku-update-widget--komik .mynimeku-update-widget__list .mynimeku-update-widget__item").each(
       (i, element) => {
         const img = $(element).find("img");
         const getposter =
