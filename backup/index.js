@@ -896,9 +896,10 @@ app.get("/movie/*", async (req, res) => {
     }
 })
 
-app.get("/banner", async (req, res) => {
-    const url = `https://www.mynimeku.com/full-list/?title=&order=update&status=On-Going&type=TV`;
+const getDetail = async (type, slug) => {
     try {
+        const url = `https://www.mynimeku.com/${type}/${slug}/`;
+
         const response = await axios.get(url, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
@@ -913,50 +914,153 @@ app.get("/banner", async (req, res) => {
 
         const $ = cheerio.load(response.data);
 
-        const banner = [];
+        const poster = $("div.infoanime img")
+            .attr("data-lazy-src")
+            ?.replace(/^\/\//, "https://");
 
-        $("article div.animposx").slice(0, 4).each((i, element) => {
-            const img = $(element).find("img");
-            const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-            const poster = getposter?.replace(/^\/\//, "https://");
+        const title = $("div.infox h1.entry-title").text().trim();
+        const rating = $("div.rating-area .rtg i").first().text().trim();
+        const description = $("div.desc .entry-content p").first().text().trim();
 
-            const tipe = $(element).find("div.type").text().trim();
-            const status = $(element).find("div.status").text().trim();
-            const title = $(element).find("div.title").text().trim();
-            const href = $(element).find("a").attr("href");
-            const slug = href.split("/").filter(Boolean).pop();
-            const katslug = new URL(href).pathname.substring(1);
-            const rating = $(element).find(".score .rtg .clearfix span.ratti").text().trim();
+        const genre = [];
+        $("div.genre-info a").each((i, el) => {
+            genre.push($(el).text().trim());
+        });
 
-            banner.push({
+        const info = {};
+        $("div.infox .spe span").each((i, el) => {
+            const label = $(el).find("b").text().trim();
+            const value = $(el).clone().children("b").remove().end().text().trim();
+            info[label] = value;
+        });
+
+        const heading = $("div.animetitle-episode span").text().trim();
+
+        const list = [];
+
+        $(".eps-wrapper, .chap-wrapper").each((i, el) => {
+            const title = $(el)
+                .find(".epsleft .lchx a")
+                .clone()
+                .children("span")
+                .remove()
+                .end()
+                .text()
+                .trim();
+
+            const href = $(el).find(".epsleft .lchx a").attr("href");
+
+            if (!href) return;
+
+            list.push({
                 title,
-                poster,
-                tipe,
-                status,
-                slug,
-                katslug,
                 href,
-                rating
+                id: href.split("/").filter(Boolean).pop()
             });
         });
 
+        return {
+            detail: {
+                poster,
+                title,
+                rating,
+                genre,
+                description,
+                info,
+                heading,
+                list
+            }
+        };
+
+    } catch (err) {
+        return {
+            detail: null
+        };
+    }
+};
+
+app.get("/banner", async (req, res) => {
+    const url = `https://www.mynimeku.com/full-list/?title=&order=update&status=On-Going&type=TV`;
+
+    try {
+        const response = await axios.get(url, {
+             headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.google.com/",
+                "Origin": "https://www.google.com",
+                "Connection": "keep-alive"
+            },
+            timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+
+        const elements = $("article div.animposx").slice(0, 4);
+
+        const banner = await Promise.all(
+            elements.map(async (i, element) => {
+
+                const img = $(element).find("img");
+                const getposter =
+                    img.attr("data-lazy-src") ||
+                    img.attr("data-src") ||
+                    img.attr("src");
+
+                const poster = getposter?.replace(/^\/\//, "https://");
+
+                const tipe = $(element).find("div.type").text().trim();
+                const status = $(element).find("div.status").text().trim();
+                const title = $(element).find("div.title").text().trim();
+                const href = $(element).find("a").attr("href");
+
+                if (!href) return null;
+
+                const slug = href.split("/").filter(Boolean).pop();
+                const katslug = new URL(href).pathname.substring(1);
+
+                const rating = $(element)
+                    .find(".score .rtg .clearfix span.ratti")
+                    .text().trim();
+
+                // 🔥 ambil detail (INI YANG BIKIN ERROR TADI)
+                const detail = await getDetail(tipe.toLowerCase(), slug);
+
+                return {
+                    title,
+                    poster,
+                    tipe,
+                    status,
+                    slug,
+                    katslug,
+                    href,
+                    rating,
+
+                    // 🔥 gabung semua data detail
+                    ...detail.detail
+                };
+
+            }).get()
+        );
+
+        // bersihin null
+        const cleanBanner = banner.filter(item => item !== null);
+
         res.json({
             status: "success",
-            pembuat: "GAZZ AHAY",
-            statusCode: 200,
-            statusMessage: "Aman cuy",
             data: {
-                banner
-            },
-        })
+                banner: cleanBanner
+            }
+        });
 
     } catch (err) {
         res.status(500).json({
             status: "error",
-            message: err.message,
+            message: err.message
         });
     }
-})
+});
 
 const PORT = process.env.PORT || 3000;
 
