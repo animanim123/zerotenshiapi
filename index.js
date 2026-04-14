@@ -171,18 +171,18 @@ app.get("/info/:type/*", async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    const poster = $("div.infoanime")
-      .children("div.thumb")
+    const poster = $(".komik-series-hero")
+      .children(".komik-series-hero__cover")
       .children("img")
       .attr("data-lazy-src")
       ?.replace(/^\/\//, "https://");
-    const title = $("div.infox").children("h1.entry-title").text().trim();
-    const rating = $("div.rating-area .rtg i").first().text().trim();
-    const description = $("div.desc .entry-content p").first().text().trim();
+    const title = $(".komik-series-hero").children("h1.komik-series-hero__title").text().trim();
+    const rating = $(".komik-series-table tbody tr").eq(5).find("td").text().trim();
+    const description = $(".komik-series-entry p").first().text().trim();
 
     const genre = [];
 
-    $("div.genre-info")
+    $(".komik-series-taxonomy__terms")
       .children("a")
       .each((i, element) => {
         const gen = $(element).text().trim();
@@ -191,75 +191,30 @@ app.get("/info/:type/*", async (req, res) => {
 
     const info = {};
 
-    const native = $("div.infox .spe span").each((i, el) => {
-      const label = $(el).find("b").text().trim();
-      const value = $(el).clone().children("b").remove().end().text().trim();
+    const native = $(".komik-series-table tbody tr").each((i, el) => {
+      const label = $(el).find("th").text().trim();
+      const value = $(el).find("td").text().trim();
 
       info[label] = value;
     });
 
-    const heading = $("div.animetitle-episode span").text().trim();
-
     const episodelist = [];
-    const chapterlist = [];
 
-    $(".eps-wrapper").each((i, el) => {
-      const episode = $(el).find(".epsright .eps a").text().trim();
-      const episodetitle = $(el)
-        .find(".epsleft .lchx a")
-        .clone()
-        .children("span")
-        .remove()
-        .end()
-        .text()
-        .trim();
-      const episodestatus = $(el)
-        .find(".epsleft .lchx a .newchlabel")
-        .text()
-        .trim();
-      const episodedate = $(el).find(".epsleft .lchx .date").text().trim();
-      const episodehref = $(el).find(".epsleft .lchx a").attr("href");
+    $(".komik-series-chapter-item").each((i, el) => {
+      const episode = $(el).find(".komik-series-chapter-item__num").text().trim();
+      const episodetitle = $(el).find(".komik-series-chapter-item__title-row .komik-series-chapter-item__title").text().trim();
+      const episodedate = $(el).find(".komik-series-chapter-item__date").text().trim();
+      const episodehref = $(el).attr("href");
       const katepisode = new URL(episodehref).pathname.substring(1);
       const episodeId = episodehref.split("/").filter(Boolean).pop();
 
       episodelist.push({
         episode,
         episodetitle,
-        episodestatus,
         episodedate,
         episodehref,
         katepisode,
         episodeId,
-      });
-    });
-
-    $(".chap-wrapper").each((i, el) => {
-      const chapter = $(el).find(".epsright .eps a").text().trim();
-      const chaptertitle = $(el)
-        .find(".epsleft .lchx a")
-        .clone()
-        .children("span")
-        .remove()
-        .end()
-        .text()
-        .trim();
-      const chapterstatus = $(el)
-        .find(".epsleft .lchx a .newchlabel")
-        .text()
-        .trim();
-      const chapterdate = $(el).find(".epsleft .lchx .date").text().trim();
-      const chapterhref = $(el).find(".epsleft .lchx a").attr("href");
-      const katchapter = new URL(chapterhref).pathname.substring(1);
-      const chapterId = chapterhref.split("/").filter(Boolean).pop();
-
-      chapterlist.push({
-        chapter,
-        chaptertitle,
-        chapterstatus,
-        chapterdate,
-        chapterhref,
-        katchapter,
-        chapterId,
       });
     });
 
@@ -275,8 +230,7 @@ app.get("/info/:type/*", async (req, res) => {
         genre,
         description,
         info,
-        heading,
-        list: episodelist.length > 0 ? episodelist : chapterlist,
+        list: episodelist
       },
     });
   } catch (err) {
