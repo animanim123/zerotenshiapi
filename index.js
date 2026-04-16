@@ -621,7 +621,7 @@ app.get("/latestkomik/page/*", async (req, res) => {
 
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
