@@ -38,99 +38,99 @@ app.get("/home", async (req, res) => {
     const animeOngoing = [];
     const mangaOngoing = [];
 
-    $(".mynimeku-update-widget--series .mynimeku-update-widget__list .mynimeku-update-widget__item").each(
-      (i, element) => {
-        const img = $(element).find("img");
-        const getposter =
-          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-        const poster = getposter?.replace(/^\/\//, "https://");
+    $(
+      ".mynimeku-update-widget--series .mynimeku-update-widget__list .mynimeku-update-widget__item",
+    ).each((i, element) => {
+      const img = $(element).find("img");
+      const getposter =
+        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+      const poster = getposter?.replace(/^\/\//, "https://");
 
-        const tipe = $(element)
-          .find(".mynimeku-update-widget__type")
-          .text()
-          .trim();
+      const tipe = $(element)
+        .find(".mynimeku-update-widget__type")
+        .text()
+        .trim();
 
-        const status = $(element)
-          .find(".mynimeku-update-widget__status")
-          .text()
-          .trim();
+      const status = $(element)
+        .find(".mynimeku-update-widget__status")
+        .text()
+        .trim();
 
-        const title = $(element)
-          .find(".mynimeku-update-widget__series-title")
-          .text()
-          .trim();
+      const title = $(element)
+        .find(".mynimeku-update-widget__series-title")
+        .text()
+        .trim();
 
-        const href = $(element)
-          .find(".mynimeku-update-widget__series-title")
-          .attr("href");
+      const href = $(element)
+        .find(".mynimeku-update-widget__series-title")
+        .attr("href");
 
-        const slug = href?.split("/").filter(Boolean).pop();
-        const katslug = href ? new URL(href).pathname.substring(1) : "";
+      const slug = href?.split("/").filter(Boolean).pop();
+      const katslug = href ? new URL(href).pathname.substring(1) : "";
 
-        const eps = $(element)
-          .find(".mynimeku-update-widget__latest-pill")
-          .text()
-          .trim();
+      const eps = $(element)
+        .find(".mynimeku-update-widget__latest-pill")
+        .text()
+        .trim();
 
-        animeOngoing.push({
-          title,
-          poster,
-          tipe,
-          status,
-          slug,
-          katslug,
-          href,
-          eps,
-        });
-      },
-    );
+      animeOngoing.push({
+        title,
+        poster,
+        tipe,
+        status,
+        slug,
+        katslug,
+        href,
+        eps,
+      });
+    });
 
-    $(".mynimeku-update-widget--komik .mynimeku-update-widget__list .mynimeku-update-widget__item").each(
-      (i, element) => {
-        const img = $(element).find("img");
-        const getposter =
-          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-        const poster = getposter?.replace(/^\/\//, "https://");
+    $(
+      ".mynimeku-update-widget--komik .mynimeku-update-widget__list .mynimeku-update-widget__item",
+    ).each((i, element) => {
+      const img = $(element).find("img");
+      const getposter =
+        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+      const poster = getposter?.replace(/^\/\//, "https://");
 
-        const tipe = $(element)
-          .find(".mynimeku-update-widget__type")
-          .text()
-          .trim();
+      const tipe = $(element)
+        .find(".mynimeku-update-widget__type")
+        .text()
+        .trim();
 
-        const status = $(element)
-          .find(".mynimeku-update-widget__status")
-          .text()
-          .trim();
+      const status = $(element)
+        .find(".mynimeku-update-widget__status")
+        .text()
+        .trim();
 
-        const title = $(element)
-          .find(".mynimeku-update-widget__series-title")
-          .text()
-          .trim();
+      const title = $(element)
+        .find(".mynimeku-update-widget__series-title")
+        .text()
+        .trim();
 
-        const href = $(element)
-          .find(".mynimeku-update-widget__series-title")
-          .attr("href");
+      const href = $(element)
+        .find(".mynimeku-update-widget__series-title")
+        .attr("href");
 
-        const slug = href?.split("/").filter(Boolean).pop();
-        const katslug = href ? new URL(href).pathname.substring(1) : "";
+      const slug = href?.split("/").filter(Boolean).pop();
+      const katslug = href ? new URL(href).pathname.substring(1) : "";
 
-        const ch = $(element)
-          .find(".mynimeku-update-widget__latest-pill")
-          .text()
-          .trim();
+      const ch = $(element)
+        .find(".mynimeku-update-widget__latest-pill")
+        .text()
+        .trim();
 
-        mangaOngoing.push({
-          title,
-          poster,
-          tipe,
-          status,
-          slug,
-          katslug,
-          href,
-          ch,
-        });
-      },
-    );
+      mangaOngoing.push({
+        title,
+        poster,
+        tipe,
+        status,
+        slug,
+        katslug,
+        href,
+        ch,
+      });
+    });
 
     res.json({
       status: "success",
@@ -171,13 +171,19 @@ app.get("/info/:type/*", async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    const poster = $(".komik-series-hero")
-      .children(".komik-series-hero__cover")
-      .children("img")
-      .attr("data-lazy-src")
-      ?.replace(/^\/\//, "https://");
-    const title = $(".komik-series-hero").children("h1.komik-series-hero__title").text().trim();
-    const rating = $(".komik-series-table tbody tr").eq(5).find("td").text().trim();
+    const img = $(".komik-series-hero").children(".komik-series-hero__cover").children("img")
+    const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+    const poster = getposter?.replace(/^\/\//, "https://");
+
+    const title = $(".komik-series-hero")
+      .children("h1.komik-series-hero__title")
+      .text()
+      .trim();
+    const rating = $(".komik-series-table tbody tr")
+      .eq(5)
+      .find("td")
+      .text()
+      .trim();
     const description = $(".komik-series-entry p").first().text().trim();
 
     const genre = [];
@@ -201,9 +207,20 @@ app.get("/info/:type/*", async (req, res) => {
     const episodelist = [];
 
     $(".komik-series-chapter-item").each((i, el) => {
-      const episode = $(el).find(".komik-series-chapter-item__num").text().trim();
-      const episodetitle = $(el).find(".komik-series-chapter-item__title-row .komik-series-chapter-item__title").text().trim();
-      const episodedate = $(el).find(".komik-series-chapter-item__date").text().trim();
+      const episode = $(el)
+        .find(".komik-series-chapter-item__num")
+        .text()
+        .trim();
+      const episodetitle = $(el)
+        .find(
+          ".komik-series-chapter-item__title-row .komik-series-chapter-item__title",
+        )
+        .text()
+        .trim();
+      const episodedate = $(el)
+        .find(".komik-series-chapter-item__date")
+        .text()
+        .trim();
       const episodehref = $(el).attr("href");
       const katepisode = new URL(episodehref).pathname.substring(1);
       const episodeId = episodehref.split("/").filter(Boolean).pop();
@@ -230,7 +247,7 @@ app.get("/info/:type/*", async (req, res) => {
         genre,
         description,
         info,
-        list: episodelist
+        list: episodelist,
       },
     });
   } catch (err) {
