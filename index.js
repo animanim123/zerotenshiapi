@@ -171,8 +171,11 @@ app.get("/info/:type/*", async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    const img = $(".komik-series-hero").children(".komik-series-hero__cover").children("img")
-    const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+    const img = $(".komik-series-hero")
+      .children(".komik-series-hero__cover")
+      .children("img");
+    const getposter =
+      img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
     const poster = getposter?.replace(/^\/\//, "https://");
 
     const title = $(".komik-series-hero")
@@ -279,12 +282,23 @@ app.get("/content/:katcontent/*", async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    const titleepsode = $(".widget_senction ol li a span").last().text().trim();
+    const gettitleseries = $(
+      ".mynimeku-episode-head .mynimeku-episode-head__title",
+    );
+    const gettitlekomik = $(".entry-hero .entry-title");
+    const selectTitle =
+      gettitleseries.first().text().trim() ||
+      gettitlekomik.first().text().trim();
+    const titleepsode = selectTitle || "Unknown Title";
+
+    const date = $(".post-info .time-info").text().trim();
 
     const servers1 = [];
     const servers2 = [];
 
-    $(".server-buttons .server-btn")
+    $(
+      ".mynimeku-episode-player__servers .mynimeku-episode-server-group .mynimeku-episode-server-btn",
+    )
       .slice(0, 6)
       .each((i, el) => {
         const server = $(el).attr("data-player-url");
@@ -296,7 +310,9 @@ app.get("/content/:katcontent/*", async (req, res) => {
         });
       });
 
-    $(".server-buttons .server-btn")
+    $(
+      ".mynimeku-episode-player__servers .mynimeku-episode-server-group .mynimeku-episode-server-btn",
+    )
       .slice(7, 12)
       .each((i, el) => {
         const server = $(el).attr("data-player-url");
@@ -309,7 +325,7 @@ app.get("/content/:katcontent/*", async (req, res) => {
       });
 
     const komik = [];
-    $(".reader-area img").each((i, el) => {
+    $(".komik-reader-content p img").each((i, el) => {
       const img = $(el).attr("src")?.replace(/^\/\//, "https://");
       const imgId = $(el).attr("img-id");
       komik.push({
@@ -318,6 +334,88 @@ app.get("/content/:katcontent/*", async (req, res) => {
       });
     });
 
+    const nav = [];
+    const navEpisode = $(".mynimeku-episode-nav__grid .mynimeku-episode-nav__col");
+    const navKomik = $(".komik-chapter-nav__grid .komik-chapter-nav__col");
+    const getnav = navEpisode.length > 0 ? navEpisode : navKomik;
+
+    // prev
+    const getpref =
+      getnav.find(".mynimeku-episode-nav__control--prev").attr("href") ||
+      getnav.find(".komik-chapter-nav__control--prev").attr("href");
+    const pref = getpref
+      ? new URL(getpref).pathname.substring(1)
+      : "Tidak ada prev";
+
+    // next
+    const getnext =
+      getnav.find(".mynimeku-episode-nav__control--next").attr("href") ||
+      getnav.find(".komik-chapter-nav__control--next").attr("href");
+    const next = getnext
+      ? new URL(getnext).pathname.substring(1)
+      : "Tidak ada next";
+
+    nav.push({ pref, next });
+
+    const listepisode = [];
+    const listchapter = [];
+
+
+    $(".mynimeku-episode-overlay__inner .mynimeku-episode-list .mynimeku-episode-card").each((i, el) => {
+      const episode = $(el).find(".mynimeku-episode-card__num").text().trim();
+      const episodetitle = $(el)
+        .find(".mynimeku-episode-card__title")
+        .text()
+        .trim();
+      const episodedate = $(el)
+        .find(".mynimeku-episode-card__date")
+        .text()
+        .trim();
+      const episodehref = $(el).attr("href");
+      const katepisode = new URL(episodehref).pathname.substring(1);
+      const episodeId = episodehref.split("/").filter(Boolean).pop();
+
+      listepisode.push({
+        episode,
+        episodetitle,
+        episodedate,
+        episodehref,
+        katepisode,
+        episodeId,
+      });
+    });
+    
+    $(".komik-chapter-overlay__inner .komik-chapter-list__panel .komik-chapter-card-row").each((i, el) => {
+      const chapter = $(el).find(".komik-chapter-card__number").text().trim();
+      const chaptertitle = $(el)
+        .find(".komik-chapter-card__text")
+        .text()
+        .trim();
+      const chapterdate = $(el)
+        .find(".komik-chapter-card__date")
+        .text()
+        .trim();
+      const chapterhref = $(el).find(".komik-chapter-card").attr("href");
+      const katchapter = new URL(chapterhref).pathname.substring(1);
+      const chapterId = chapterhref.split("/").filter(Boolean).pop();
+
+      listchapter.push({
+        chapter,
+        chaptertitle,
+        chapterdate,
+        chapterhref,
+        katchapter,
+        chapterId,
+      });
+    });
+
+    const list = listepisode.length > 0 ? listepisode : listchapter;
+
+    const content =
+      servers1.length > 0 && servers2.length > 0
+        ? { ["public"]: servers1, ["private"]: servers2 }
+        : { komiks: komik };
+
     res.json({
       status: "success",
       pembuat: "GAZZ AHAY",
@@ -325,9 +423,10 @@ app.get("/content/:katcontent/*", async (req, res) => {
       statusMessage: "Aman cuy",
       data: {
         titleepsode,
-        ["public"]: servers1,
-        ["private"]: servers2,
-        komiks: komik,
+        date,
+        content,
+        nav,
+        list,
       },
     });
   } catch (err) {
@@ -389,20 +488,20 @@ app.get("/latestseries/page/*", async (req, res) => {
     const latestseries = [];
     const nav = [];
 
-    $("article.anime div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-update-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").first().text().trim();
+      const status = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").last().text().trim();
+      const title = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
       const eps = $(element)
-        .find("div.plyepisode")
+        .find(".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill")
         .contents()
         .filter(function () {
           return this.type === "text";
@@ -424,14 +523,16 @@ app.get("/latestseries/page/*", async (req, res) => {
       });
     });
 
-    $(".pagination")
+    $(".mynimeku-update-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
 
+        if (isNaN(page)) return;
+
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
@@ -476,19 +577,20 @@ app.get("/latestkomik/page/*", async (req, res) => {
     const latestkomik = [];
     const nav = [];
 
-    $("article.manga div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-update-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+
+      const tipe = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").first().text().trim();
+      const status = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").last().text().trim();
+      const title = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
       const ch = $(element)
-        .find("div.plyepisode")
+        .find(".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill")
         .contents()
         .filter(function () {
           return this.type === "text";
@@ -510,10 +612,12 @@ app.get("/latestkomik/page/*", async (req, res) => {
       });
     });
 
-    $(".pagination")
+      $(".mynimeku-update-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
+
+        if (isNaN(page)) return;
 
         nav.push({
           page,
@@ -541,7 +645,7 @@ app.get("/latestkomik/page/*", async (req, res) => {
 
 app.get("/search/*", async (req, res) => {
   const keyword = req.params[0];
-  const url = `https://www.mynimeku.com/?s=${keyword}`;
+  const url = `https://www.mynimeku.com/search/${keyword}`;
   try {
     const response = await axios.get(url, {
       headers: {
@@ -561,22 +665,18 @@ app.get("/search/*", async (req, res) => {
 
     const search = [];
 
-    $("article div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-search-feed__list .mynimeku-search-feed__item").slice(0, 7).each((i, element) => {
+      const img = $(element).find(".mynimeku-search-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__type").first().text().trim();
+      const status = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__status").last().text().trim();
+      const title = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
-      const rating = $(element)
-        .find(".score .rtg .clearfix span.ratti")
-        .text()
-        .trim();
 
       search.push({
         title,
@@ -586,7 +686,6 @@ app.get("/search/*", async (req, res) => {
         slug,
         katslug,
         href,
-        rating,
       });
     });
 
@@ -609,7 +708,7 @@ app.get("/search/*", async (req, res) => {
 
 app.get("/popular/*", async (req, res) => {
   const page = req.params[0];
-  const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=popular&status&type=TV&genre%5B0%5D=action&genre%5B1%5D=adult&genre%5B2%5D=adult-cast&genre%5B3%5D=adventure&genre%5B4%5D=anthropomorphic&genre%5B5%5D=award-winning&genre%5B6%5D=cars&genre%5B7%5D=cgdct&genre%5B8%5D=childcare&genre%5B9%5D=comedy&genre%5B10%5D=crossdressing&genre%5B11%5D=drama&genre%5B12%5D=ecchi&genre%5B13%5D=erotica&genre%5B14%5D=fantasy&genre%5B15%5D=gag-humor&genre%5B16%5D=game&genre%5B17%5D=girls-love&genre%5B18%5D=gore&genre%5B19%5D=gourmet&genre%5B20%5D=harem&genre%5B21%5D=high-stakes-game&genre%5B22%5D=historical&genre%5B23%5D=horror&genre%5B24%5D=idols&genre%5B25%5D=isekai&genre%5B26%5D=josei&genre%5B27%5D=love-polygon&genre%5B28%5D=love-status-quo&genre%5B29%5D=mahou-shoujo&genre%5B30%5D=martial-arts&genre%5B31%5D=mature&genre%5B32%5D=military&genre%5B33%5D=music&genre%5B34%5D=mystery&genre%5B35%5D=mythology&genre%5B36%5D=organized-crime&genre%5B37%5D=otaku-culture&genre%5B38%5D=parody&genre%5B39%5D=performing-arts&genre%5B40%5D=reincarnation&genre%5B41%5D=romance&genre%5B42%5D=samurai&genre%5B43%5D=school&genre%5B44%5D=sci-fi&genre%5B45%5D=seinen&genre%5B46%5D=shounen&genre%5B47%5D=showbiz&genre%5B48%5D=slice-of-life&genre%5B49%5D=space&genre%5B50%5D=sports&genre%5B51%5D=super-power&genre%5B52%5D=supernatural&genre%5B53%5D=survival&genre%5B54%5D=suspense&genre%5B55%5D=time-travel&genre%5B56%5D=urban-fantasy&genre%5B57%5D=vampire&genre%5B58%5D=video-game&genre%5B59%5D=villainess&genre%5B60%5D=workplace`;
+  const url = `https://www.mynimeku.com/full-list/mix/o:popular/page/${page}/`;
   try {
     const response = await axios.get(url, {
       headers: {
@@ -630,22 +729,18 @@ app.get("/popular/*", async (req, res) => {
     const popular = [];
     const nav = [];
 
-    $("article div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
+      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
+      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
-      const rating = $(element)
-        .find(".score .rtg .clearfix span.ratti")
-        .text()
-        .trim();
 
       popular.push({
         title,
@@ -655,18 +750,19 @@ app.get("/popular/*", async (req, res) => {
         slug,
         katslug,
         href,
-        rating,
       });
     });
 
-    $(".pagination")
+    $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
 
+        if (isNaN(page)) return;
+
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
@@ -690,7 +786,7 @@ app.get("/popular/*", async (req, res) => {
 
 app.get("/list/*", async (req, res) => {
   const page = req.params[0];
-  const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status&type=TV&genre%5B0%5D=action&genre%5B1%5D=adventure&genre%5B2%5D=anthropomorphic&genre%5B3%5D=award-winning&genre%5B4%5D=cars&genre%5B5%5D=cgdct&genre%5B6%5D=childcare&genre%5B7%5D=comedy&genre%5B8%5D=crossdressing&genre%5B9%5D=drama&genre%5B10%5D=fantasy&genre%5B11%5D=gag-humor&genre%5B12%5D=game&genre%5B13%5D=gore&genre%5B14%5D=gourmet&genre%5B15%5D=high-stakes-game&genre%5B16%5D=historical&genre%5B17%5D=horror&genre%5B18%5D=idols&genre%5B19%5D=isekai&genre%5B20%5D=josei&genre%5B21%5D=love-polygon&genre%5B22%5D=love-status-quo&genre%5B23%5D=mahou-shoujo&genre%5B24%5D=martial-arts&genre%5B25%5D=mature&genre%5B26%5D=military&genre%5B27%5D=music&genre%5B28%5D=mystery&genre%5B29%5D=mythology&genre%5B30%5D=organized-crime&genre%5B31%5D=otaku-culture&genre%5B32%5D=parody&genre%5B33%5D=performing-arts&genre%5B34%5D=reincarnation&genre%5B35%5D=romance&genre%5B36%5D=samurai&genre%5B37%5D=school&genre%5B38%5D=sci-fi&genre%5B39%5D=seinen&genre%5B40%5D=shounen&genre%5B41%5D=showbiz&genre%5B42%5D=slice-of-life&genre%5B43%5D=space&genre%5B44%5D=sports&genre%5B45%5D=super-power&genre%5B46%5D=supernatural&genre%5B47%5D=survival&genre%5B48%5D=suspense&genre%5B49%5D=time-travel&genre%5B50%5D=urban-fantasy&genre%5B51%5D=vampire&genre%5B52%5D=video-game&genre%5B53%5D=villainess&genre%5B54%5D=workplace`;
+  const url = `https://www.mynimeku.com/full-list/page/${page}/`;
   try {
     const response = await axios.get(url, {
       headers: {
@@ -711,22 +807,18 @@ app.get("/list/*", async (req, res) => {
     const list = [];
     const nav = [];
 
-    $("article div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
+      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
+      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
-      const rating = $(element)
-        .find(".score .rtg .clearfix span.ratti")
-        .text()
-        .trim();
 
       list.push({
         title,
@@ -736,18 +828,19 @@ app.get("/list/*", async (req, res) => {
         slug,
         katslug,
         href,
-        rating,
       });
     });
 
-    $(".pagination")
+    $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
 
+        if (isNaN(page)) return;
+
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
@@ -771,7 +864,7 @@ app.get("/list/*", async (req, res) => {
 
 app.get("/ongoing/*", async (req, res) => {
   const page = req.params[0];
-  const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status=On-Going&type=TV&genre%5B0%5D=action&genre%5B1%5D=adventure&genre%5B2%5D=anthropomorphic&genre%5B3%5D=award-winning&genre%5B4%5D=cars&genre%5B5%5D=cgdct&genre%5B6%5D=childcare&genre%5B7%5D=comedy&genre%5B8%5D=crossdressing&genre%5B9%5D=drama&genre%5B10%5D=ecchi&genre%5B11%5D=fantasy&genre%5B12%5D=gag-humor&genre%5B13%5D=game&genre%5B14%5D=gore&genre%5B15%5D=gourmet&genre%5B16%5D=harem&genre%5B17%5D=high-stakes-game&genre%5B18%5D=historical&genre%5B19%5D=horror&genre%5B20%5D=idols&genre%5B21%5D=isekai&genre%5B22%5D=josei&genre%5B23%5D=love-polygon&genre%5B24%5D=love-status-quo&genre%5B25%5D=mahou-shoujo&genre%5B26%5D=martial-arts&genre%5B27%5D=mature&genre%5B28%5D=military&genre%5B29%5D=music&genre%5B30%5D=mystery&genre%5B31%5D=mythology&genre%5B32%5D=organized-crime&genre%5B33%5D=otaku-culture&genre%5B34%5D=parody&genre%5B35%5D=performing-arts&genre%5B36%5D=reincarnation&genre%5B37%5D=romance&genre%5B38%5D=samurai&genre%5B39%5D=school&genre%5B40%5D=sci-fi&genre%5B41%5D=seinen&genre%5B42%5D=shounen&genre%5B43%5D=showbiz&genre%5B44%5D=slice-of-life&genre%5B45%5D=space&genre%5B46%5D=sports&genre%5B47%5D=super-power&genre%5B48%5D=supernatural&genre%5B49%5D=survival&genre%5B50%5D=suspense&genre%5B51%5D=time-travel&genre%5B52%5D=urban-fantasy&genre%5B53%5D=vampire&genre%5B54%5D=video-game&genre%5B55%5D=villainess&genre%5B56%5D=workplace`;
+  const url = `https://www.mynimeku.com/full-list/mix/s:on-going/page/${page}/`;
   try {
     const response = await axios.get(url, {
       headers: {
@@ -792,22 +885,18 @@ app.get("/ongoing/*", async (req, res) => {
     const ongoing = [];
     const nav = [];
 
-    $("article div.animposx").each((i, element) => {
-      const img = $(element).find("img");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
       const getposter =
         img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
+      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
+      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
-      const rating = $(element)
-        .find(".score .rtg .clearfix span.ratti")
-        .text()
-        .trim();
 
       ongoing.push({
         title,
@@ -817,18 +906,19 @@ app.get("/ongoing/*", async (req, res) => {
         slug,
         katslug,
         href,
-        rating,
       });
     });
 
-    $(".pagination")
+    $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
 
+        if (isNaN(page)) return;
+
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
@@ -852,7 +942,7 @@ app.get("/ongoing/*", async (req, res) => {
 
 app.get("/movie/*", async (req, res) => {
   const page = req.params[0];
-  const url = `https://www.mynimeku.com/full-list/page/${page}/?title&order=title&status&type=Movie`;
+  const url = `https://www.mynimeku.com/full-list/mix/t:MOVIE/page/${page}/`;
   try {
     const response = await axios.get(url, {
       headers: {
@@ -873,22 +963,17 @@ app.get("/movie/*", async (req, res) => {
     const movie = [];
     const nav = [];
 
-    $("article div.animposx").each((i, element) => {
-      const img = $(element).find("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+   $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
+      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
+      const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
       const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find("div.type").text().trim();
-      const status = $(element).find("div.status").text().trim();
-      const title = $(element).find("div.title").text().trim();
+      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
+      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
+      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
       const href = $(element).find("a").attr("href");
       const slug = href.split("/").filter(Boolean).pop();
       const katslug = new URL(href).pathname.substring(1);
-      const rating = $(element)
-        .find(".score .rtg .clearfix span.ratti")
-        .text()
-        .trim();
 
       movie.push({
         title,
@@ -898,18 +983,19 @@ app.get("/movie/*", async (req, res) => {
         slug,
         katslug,
         href,
-        rating,
       });
     });
 
-    $(".pagination")
+    $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
 
+        if (isNaN(page)) return;
+
         nav.push({
           page,
-          active: $(el).hasClass("current"),
+          active: $(el).hasClass("is-current"),
         });
       });
 
@@ -921,175 +1007,6 @@ app.get("/movie/*", async (req, res) => {
       data: {
         movie,
         nav,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-});
-
-const getDetail = async (type, slug) => {
-  try {
-    const url = `https://www.mynimeku.com/${type}/${slug}/`;
-
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        Referer: "https://www.google.com/",
-        Origin: "https://www.google.com",
-        Connection: "keep-alive",
-      },
-      timeout: 10000,
-    });
-
-    const $ = cheerio.load(response.data);
-
-    const poster = $("div.infoanime img")
-      .attr("data-lazy-src")
-      ?.replace(/^\/\//, "https://");
-
-    const title = $("div.infox h1.entry-title").text().trim();
-    const rating = $("div.rating-area .rtg i").first().text().trim();
-    const description = $("div.desc .entry-content p").first().text().trim();
-
-    const genre = [];
-    $("div.genre-info a").each((i, el) => {
-      genre.push($(el).text().trim());
-    });
-
-    const info = {};
-    $("div.infox .spe span").each((i, el) => {
-      const label = $(el).find("b").text().trim();
-      const value = $(el).clone().children("b").remove().end().text().trim();
-      info[label] = value;
-    });
-
-    const heading = $("div.animetitle-episode span").text().trim();
-
-    const list = [];
-
-    $(".eps-wrapper, .chap-wrapper").each((i, el) => {
-      const title = $(el)
-        .find(".epsleft .lchx a")
-        .clone()
-        .children("span")
-        .remove()
-        .end()
-        .text()
-        .trim();
-
-      const href = $(el).find(".epsleft .lchx a").attr("href");
-
-      if (!href) return;
-
-      list.push({
-        title,
-        href,
-        id: href.split("/").filter(Boolean).pop(),
-      });
-    });
-
-    return {
-      detail: {
-        poster,
-        title,
-        rating,
-        genre,
-        description,
-        info,
-        heading,
-        list,
-      },
-    };
-  } catch (err) {
-    return {
-      detail: null,
-    };
-  }
-};
-
-app.get("/banner", async (req, res) => {
-  const url = `https://www.mynimeku.com/full-list/?title=&order=update&status=On-Going&type=TV`;
-
-  try {
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        Referer: "https://www.google.com/",
-        Origin: "https://www.google.com",
-        Connection: "keep-alive",
-      },
-      timeout: 10000,
-    });
-
-    const $ = cheerio.load(response.data);
-
-    const elements = $("article div.animposx").slice(0, 4);
-
-    const banner = await Promise.all(
-      elements
-        .map(async (i, element) => {
-          const img = $(element).find("img");
-          const getposter =
-            img.attr("data-lazy-src") ||
-            img.attr("data-src") ||
-            img.attr("src");
-
-          const poster = getposter?.replace(/^\/\//, "https://");
-
-          const tipe = $(element).find("div.type").text().trim();
-          const status = $(element).find("div.status").text().trim();
-          const title = $(element).find("div.title").text().trim();
-          const href = $(element).find("a").attr("href");
-
-          if (!href) return null;
-
-          const slug = href.split("/").filter(Boolean).pop();
-          const katslug = new URL(href).pathname.substring(1);
-
-          const rating = $(element)
-            .find(".score .rtg .clearfix span.ratti")
-            .text()
-            .trim();
-
-          // 🔥 ambil detail (INI YANG BIKIN ERROR TADI)
-          const detail = await getDetail(tipe.toLowerCase(), slug);
-
-          return {
-            title,
-            poster,
-            tipe,
-            status,
-            slug,
-            katslug,
-            href,
-            rating,
-
-            // 🔥 gabung semua data detail
-            ...detail.detail,
-          };
-        })
-        .get(),
-    );
-
-    // bersihin null
-    const cleanBanner = banner.filter((item) => item !== null);
-
-    res.json({
-      status: "success",
-      data: {
-        banner: cleanBanner,
       },
     });
   } catch (err) {
