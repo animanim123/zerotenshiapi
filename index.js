@@ -1,9 +1,37 @@
-import express from "express";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import "dotenv/config";
+import express from "express";
 import cors from "cors";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import pinoHttp from "pino-http";
+
+import cache from "./src/utils/cache.js";
+import logger from "./src/utils/logger.js";
 
 const app = express();
+app.set("trust proxy", 1);
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: "error",
+    message: "Terlalu banyak request, coba lagi nanti.",
+  },
+});
+
+app.use(limiter);
+app.use(cors());
+app.use(compression());
+app.use(
+  pinoHttp({
+    logger,
+  }),
+);
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1020,5 +1048,5 @@ app.get("/movie/*", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server jalan di port " + PORT);
+  logger.info(`Server jalan di port ${PORT}`);
 });
