@@ -28,11 +28,7 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(cors());
 app.use(compression());
-app.use(
-  pinoHttp({
-    logger,
-  }),
-);
+app.use(pinoHttp());
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
