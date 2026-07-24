@@ -1,4 +1,3 @@
-import serverless from "serverless-http";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import "dotenv/config";
@@ -1046,4 +1045,8 @@ app.get("/movie/*", async (req, res) => {
   }
 });
 
-export const handler = serverless(app);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  logger.info(`Server jalan di port ${PORT}`);
+});
