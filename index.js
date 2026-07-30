@@ -354,7 +354,7 @@ app.get("/content/:katcontent/*", async (req, res) => {
       const img = $(el).attr("src")?.replace(/^\/\//, "https://");
       const imgId = $(el).attr("img-id");
       komik.push({
-        img: `https://zerotenshiapi.vercel.app/image?url=${encodeURIComponent(img)}`,
+        img,
         imgId,
       });
     });
