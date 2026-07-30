@@ -476,30 +476,35 @@ app.get("/image", async (req, res) => {
 
     const response = await axios.get(url, {
       responseType: "stream",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        Referer: "https://www.google.com/",
+        Origin: "https://www.google.com",
+        Connection: "keep-alive",
+      },
+      validateStatus: () => true,
     });
+
+    console.log("Status:", response.status);
+
+    if (response.status !== 200) {
+      return res.status(response.status).send("Failed to fetch image");
+    }
 
     res.setHeader(
       "Content-Type",
       response.headers["content-type"] || "image/jpeg",
     );
+    res.setHeader("Access-Control-Allow-Origin", "*");
 
     response.data.pipe(res);
   } catch (err) {
-    console.error("===== IMAGE PROXY ERROR =====");
-
-    if (err.response) {
-      console.error("Status:", err.response.status);
-      console.error("Headers:", err.response.headers);
-      console.error("Data:", err.response.data);
-    } else {
-      console.error(err);
-    }
-
-    res.status(err.response?.status || 500).json({
-      success: false,
-      message: err.message,
-      status: err.response?.status,
-    });
+    console.error(err);
+    res.status(500).send("Internal Server Error");
   }
 });
 
