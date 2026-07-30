@@ -464,7 +464,7 @@ app.get("/content/:katcontent/*", async (req, res) => {
   }
 });
 
-router.get("/image", async (req, res) => {
+app.get("/image", async (req, res) => {
   try {
     const { url } = req.query;
 
