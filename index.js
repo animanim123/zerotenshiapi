@@ -360,7 +360,9 @@ app.get("/content/:katcontent/*", async (req, res) => {
     });
 
     const nav = [];
-    const navEpisode = $(".mynimeku-episode-nav__grid .mynimeku-episode-nav__col");
+    const navEpisode = $(
+      ".mynimeku-episode-nav__grid .mynimeku-episode-nav__col",
+    );
     const navKomik = $(".komik-chapter-nav__grid .komik-chapter-nav__col");
     const getnav = navEpisode.length > 0 ? navEpisode : navKomik;
 
@@ -385,8 +387,9 @@ app.get("/content/:katcontent/*", async (req, res) => {
     const listepisode = [];
     const listchapter = [];
 
-
-    $(".mynimeku-episode-overlay__inner .mynimeku-episode-list .mynimeku-episode-card").each((i, el) => {
+    $(
+      ".mynimeku-episode-overlay__inner .mynimeku-episode-list .mynimeku-episode-card",
+    ).each((i, el) => {
       const episode = $(el).find(".mynimeku-episode-card__num").text().trim();
       const episodetitle = $(el)
         .find(".mynimeku-episode-card__title")
@@ -409,17 +412,16 @@ app.get("/content/:katcontent/*", async (req, res) => {
         episodeId,
       });
     });
-    
-    $(".komik-chapter-overlay__inner .komik-chapter-list__panel .komik-chapter-card-row").each((i, el) => {
+
+    $(
+      ".komik-chapter-overlay__inner .komik-chapter-list__panel .komik-chapter-card-row",
+    ).each((i, el) => {
       const chapter = $(el).find(".komik-chapter-card__number").text().trim();
       const chaptertitle = $(el)
         .find(".komik-chapter-card__text")
         .text()
         .trim();
-      const chapterdate = $(el)
-        .find(".komik-chapter-card__date")
-        .text()
-        .trim();
+      const chapterdate = $(el).find(".komik-chapter-card__date").text().trim();
       const chapterhref = $(el).find(".komik-chapter-card").attr("href");
       const katchapter = new URL(chapterhref).pathname.substring(1);
       const chapterId = chapterhref.split("/").filter(Boolean).pop();
@@ -462,31 +464,38 @@ app.get("/content/:katcontent/*", async (req, res) => {
   }
 });
 
-app.get("/image", async (req, res) => {
+router.get("/image", async (req, res) => {
   try {
-    const url = req.query.url;
+    const { url } = req.query;
 
-    if (!url) {
-      return res.status(400).send("URL tidak ada");
+    if (!url || typeof url !== "string") {
+      return res.status(400).send("Missing url");
     }
 
     const response = await axios.get(url, {
-      responseType: "arraybuffer",
+      responseType: "stream",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
         Referer: "https://www.mynimeku.com/",
-        Origin: "https://www.mynimeku.com",
-        Connection: "keep-alive",
+        Origin: "https://www.mynimeku.com/",
       },
     });
 
-    res.set("Content-Type", response.headers["content-type"]);
-    res.send(response.data);
+    res.setHeader(
+      "Content-Type",
+      response.headers["content-type"] || "image/jpeg",
+    );
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+    response.data.pipe(res);
   } catch (err) {
-    res.status(500).send("Gagal ambil gambar");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    console.error(err.message);
+    res.status(500).send("Failed");
   }
 });
 
@@ -513,40 +522,63 @@ app.get("/latestseries/page/*", async (req, res) => {
     const latestseries = [];
     const nav = [];
 
-    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-update-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-update-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").first().text().trim();
-      const status = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").last().text().trim();
-      const title = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
-      const eps = $(element)
-        .find(".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill")
-        .contents()
-        .filter(function () {
-          return this.type === "text";
-        })
-        .text()
-        .trim()
-        .split("\n")[0]
-        .trim();
+        const tipe = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__series-title",
+          )
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
+        const eps = $(element)
+          .find(
+            ".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill",
+          )
+          .contents()
+          .filter(function () {
+            return this.type === "text";
+          })
+          .text()
+          .trim()
+          .split("\n")[0]
+          .trim();
 
-      latestseries.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-        eps,
-      });
-    });
+        latestseries.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+          eps,
+        });
+      },
+    );
 
     $(".mynimeku-update-feed__pagination")
       .find("span, a, span.page-numbers")
@@ -602,42 +634,65 @@ app.get("/latestkomik/page/*", async (req, res) => {
     const latestkomik = [];
     const nav = [];
 
-    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-update-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-update-feed__list .mynimeku-update-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-update-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").first().text().trim();
-      const status = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge").last().text().trim();
-      const title = $(element).find(".mynimeku-update-feed__body .mynimeku-update-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
-      const ch = $(element)
-        .find(".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill")
-        .contents()
-        .filter(function () {
-          return this.type === "text";
-        })
-        .text()
-        .trim()
-        .split("\n")[0]
-        .trim();
+        const tipe = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__badges .mynimeku-update-feed__badge",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(
+            ".mynimeku-update-feed__body .mynimeku-update-feed__series-title",
+          )
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
+        const ch = $(element)
+          .find(
+            ".mynimeku-update-feed__latest-link .mynimeku-update-feed__latest-content .mynimeku-update-feed__latest-pill",
+          )
+          .contents()
+          .filter(function () {
+            return this.type === "text";
+          })
+          .text()
+          .trim()
+          .split("\n")[0]
+          .trim();
 
-      latestkomik.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-        ch,
-      });
-    });
+        latestkomik.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+          ch,
+        });
+      },
+    );
 
-      $(".mynimeku-update-feed__pagination")
+    $(".mynimeku-update-feed__pagination")
       .find("span, a, span.page-numbers")
       .each((i, el) => {
         const page = $(el).text().trim();
@@ -690,29 +745,50 @@ app.get("/search/*", async (req, res) => {
 
     const search = [];
 
-    $(".mynimeku-search-feed__list .mynimeku-search-feed__item").slice(0, 7).each((i, element) => {
-      const img = $(element).find(".mynimeku-search-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-search-feed__list .mynimeku-search-feed__item")
+      .slice(0, 7)
+      .each((i, element) => {
+        const img = $(element)
+          .find(".mynimeku-search-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__type").first().text().trim();
-      const status = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__status").last().text().trim();
-      const title = $(element).find(".mynimeku-search-feed__body .mynimeku-search-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
+        const tipe = $(element)
+          .find(
+            ".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__type",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-search-feed__body .mynimeku-search-feed__meta .mynimeku-search-feed__status",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(
+            ".mynimeku-search-feed__body .mynimeku-search-feed__series-title",
+          )
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
 
-      search.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
+        search.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+        });
       });
-    });
 
     res.json({
       status: "success",
@@ -754,29 +830,48 @@ app.get("/popular/*", async (req, res) => {
     const popular = [];
     const nav = [];
 
-    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-mix-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
-      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
-      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
+        const tipe = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title")
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
 
-      popular.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-      });
-    });
+        popular.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+        });
+      },
+    );
 
     $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
@@ -832,29 +927,48 @@ app.get("/list/*", async (req, res) => {
     const list = [];
     const nav = [];
 
-    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-mix-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
-      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
-      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
+        const tipe = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title")
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
 
-      list.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-      });
-    });
+        list.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+        });
+      },
+    );
 
     $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
@@ -910,29 +1024,48 @@ app.get("/ongoing/*", async (req, res) => {
     const ongoing = [];
     const nav = [];
 
-    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
-      const getposter =
-        img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-mix-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
-      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
-      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
+        const tipe = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title")
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
 
-      ongoing.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-      });
-    });
+        ongoing.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+        });
+      },
+    );
 
     $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
@@ -988,28 +1121,48 @@ app.get("/movie/*", async (req, res) => {
     const movie = [];
     const nav = [];
 
-   $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each((i, element) => {
-      const img = $(element).find(".mynimeku-mix-feed__cover").children("img");
-      const getposter = img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
-      const poster = getposter?.replace(/^\/\//, "https://");
+    $(".mynimeku-mix-feed__list .mynimeku-mix-feed__item").each(
+      (i, element) => {
+        const img = $(element)
+          .find(".mynimeku-mix-feed__cover")
+          .children("img");
+        const getposter =
+          img.attr("data-lazy-src") || img.attr("data-src") || img.attr("src");
+        const poster = getposter?.replace(/^\/\//, "https://");
 
-      const tipe = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type").first().text().trim();
-      const status = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status").last().text().trim();
-      const title = $(element).find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title").text().trim();
-      const href = $(element).find("a").attr("href");
-      const slug = href.split("/").filter(Boolean).pop();
-      const katslug = new URL(href).pathname.substring(1);
+        const tipe = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__type",
+          )
+          .first()
+          .text()
+          .trim();
+        const status = $(element)
+          .find(
+            ".mynimeku-mix-feed__body .mynimeku-mix-feed__meta .mynimeku-mix-feed__status",
+          )
+          .last()
+          .text()
+          .trim();
+        const title = $(element)
+          .find(".mynimeku-mix-feed__body .mynimeku-mix-feed__series-title")
+          .text()
+          .trim();
+        const href = $(element).find("a").attr("href");
+        const slug = href.split("/").filter(Boolean).pop();
+        const katslug = new URL(href).pathname.substring(1);
 
-      movie.push({
-        title,
-        poster,
-        tipe,
-        status,
-        slug,
-        katslug,
-        href,
-      });
-    });
+        movie.push({
+          title,
+          poster,
+          tipe,
+          status,
+          slug,
+          katslug,
+          href,
+        });
+      },
+    );
 
     $(".mynimeku-mix-feed__pagination")
       .find("span, a, span.page-numbers")
