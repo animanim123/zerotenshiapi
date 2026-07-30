@@ -480,15 +480,26 @@ app.get("/image", async (req, res) => {
 
     res.setHeader(
       "Content-Type",
-      response.headers["content-type"] || "image/jpeg"
+      response.headers["content-type"] || "image/jpeg",
     );
 
     response.data.pipe(res);
   } catch (err) {
-    console.error(err.response?.status);
-    console.error(err.message);
+    console.error("===== IMAGE PROXY ERROR =====");
 
-    res.status(500).send("Failed");
+    if (err.response) {
+      console.error("Status:", err.response.status);
+      console.error("Headers:", err.response.headers);
+      console.error("Data:", err.response.data);
+    } else {
+      console.error(err);
+    }
+
+    res.status(err.response?.status || 500).json({
+      success: false,
+      message: err.message,
+      status: err.response?.status,
+    });
   }
 });
 
