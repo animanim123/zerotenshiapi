@@ -465,38 +465,25 @@ app.get("/content/:katcontent/*", async (req, res) => {
 });
 
 app.get("/image", async (req, res) => {
-  try {
-    const { url } = req.query;
+try {
+  const response = await axios.get(url, {
+    responseType: "stream",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    },
+  });
 
-    if (!url || typeof url !== "string") {
-      return res.status(400).send("Missing url");
-    }
+  console.log("Status:", response.status);
+  console.log("Content-Type:", response.headers["content-type"]);
 
-    const response = await axios.get(url, {
-      responseType: "stream",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-        Referer: "https://www.mynimeku.com/",
-        Origin: "https://www.mynimeku.com/",
-      },
-    });
+} catch (err) {
+  console.error(err.response?.status);
+  console.error(err.response?.data);
+  console.error(err.message);
 
-    res.setHeader(
-      "Content-Type",
-      response.headers["content-type"] || "image/jpeg",
-    );
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET");
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-
-    response.data.pipe(res);
-  } catch (err) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    console.error(err.message);
-    res.status(500).send("Failed");
-  }
+  res.status(500).send(err.message);
+}
 });
 
 app.get("/latestseries/page/*", async (req, res) => {
